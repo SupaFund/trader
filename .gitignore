@@ -10,11 +10,8 @@ packages/valory/connections/p2p_libp2p_client/
 
 packages/valory/skills/abstract_abci/
 packages/valory/skills/abstract_round_abci/
-packages/valory/skills/mech_interact_abci/
 packages/valory/skills/registration_abci/
 packages/valory/skills/reset_pause_abci/
-packages/valory/skills/transaction_settlement_abci/
-packages/valory/skills/termination_abci/
 
 packages/valory/contracts/erc20/
 packages/valory/contracts/mech/

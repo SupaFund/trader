@@ -1,37 +1,44 @@
-name: tx_settlement_multiplexer_abci
+name: termination_abci
 author: valory
 version: 0.1.0
 type: skill
-description: This skill implements a multiplexer for the transaction settlement skill.
+description: Termination skill.
 license: Apache-2.0
 aea_version: '>=1.0.0, <2.0.0'
 fingerprint:
-  README.md: bafybeiegcjg2wjrsqhrmvyulioch3d67rnbzkx5af3ztkaw7kxathjreda
-  __init__.py: bafybeide6k22zk4f3hyzhpapaoddsnxpw5elqcfvrxxj4nfvpzctv6jqhu
-  behaviours.py: bafybeictumcqn2pgo7y2duemvzoaafognfhl6s6il3tv53hq66tf7xgpsu
-  dialogues.py: bafybeiebofyykseqp3fmif36cqmmyf3k7d2zbocpl6t6wnlpv4szghrxbm
-  fsm_specification.yaml: bafybeicd7us5ffvsrxm7ybaanyzojbhmo7xtsfd3swtdem4dfsxkidxw7a
-  handlers.py: bafybeiafbqr7ojfcbwohvee7x4zzswad3ymfrrbjlfz7uuuttmn3qdfs6q
-  models.py: bafybeigtmxoecoow663hgqnyinxarlrttyyt5ghpbdamdv4tc4kikcfx3a
-  rounds.py: bafybeig77b7m5fyhy4bsdnmveszagq27v2ck7627tyhw6zzn7spmz5qalu
+  __init__.py: bafybeidztixckwwbn4ujl6kkvghgsk23xecbgnbiw3e4t3owxldhyjo3au
+  behaviours.py: bafybeihqp3ng74m4rj52vemp2cezn3gd4s72jsbry2odq7s5xqhq75uuem
+  dialogues.py: bafybeif7uhfjkcz3ryhti6gafqxhvciw4ec5bdshxvq3355tun5ydkzrna
+  handlers.py: bafybeibh5b3p4bdvbnwiqwormduqjvuievylb3s2wgj4ald4led7gx2kji
+  models.py: bafybeihak6dcfqpjxbryeixksdn5lbdifq5ondzlh4wiweoptzzn42wco4
+  payloads.py: bafybeihbwfunongkws5lck67sdgpnytq6bdbiv22yuehmyfth4qeypjcpa
+  rounds.py: bafybeifouwd4dv6ummirb45e7qxnyyadg2bsrl4kx6xbr6rvodz3lsqgqa
+  tests/__init__.py: bafybeigsjjibb2gcybzp5yrsy25vyiu54rw6oaeyw5onaqemsvul7bmroi
+  tests/test_behaviours.py: bafybeibkogjosxk6ktneru5ddgzguuiw2wuvx2n63d3rpyqhoy7llnoc5i
+  tests/test_dialogues.py: bafybeicb6gfanfyt3wiq3svdlvtxiuzpk72oxp7cfdeq4ezed7ixee5yae
+  tests/test_handlers.py: bafybeiefz2ebr5rlyxziwr4bts2r75abpqgji3k47a6hnrj7e7t2yvgmpu
+  tests/test_models.py: bafybeih5wtdjuv4hc25fxneeg7mgjiks55xj353zxfamvtrthkw2ydmbbe
+  tests/test_payloads.py: bafybeibai4dzjjdeyeinyirjndcfzbj2qst6roj6prjvcqwut5m3won3fa
+  tests/test_rounds.py: bafybeiafy4hqww4qqjfd7wrqhnezf47n66pnodect6hquf4bpkrwiqmufq
 fingerprint_ignore_patterns: []
 connections: []
-contracts: []
+contracts:
+- valory/gnosis_safe:0.1.0:bafybeibq77mgzhyb23blf2eqmia3kc6io5karedfzhntvpcebeqdzrgyqa
+- valory/multisend:0.1.0:bafybeig5byt5urg2d2bsecufxe5ql7f4mezg3mekfleeh32nmuusx66p4y
+- valory/service_registry:0.1.0:bafybeicbxmbzt757lbmyh6762lrkcrp3oeum6dk3z7pvosixasifsk6xlm
 protocols:
-- valory/ledger_api:1.0.0:bafybeihdk6psr4guxmbcrc26jr2cbgzpd5aljkqvpwo64bvaz7tdti2oni
+- valory/contract_api:1.0.0:bafybeidgu7o5llh26xp3u3ebq3yluull5lupiyeu6iooi2xyymdrgnzq5i
 skills:
 - valory/abstract_round_abci:0.1.0:bafybeih3enhagoql7kzpeyzzu2scpkif6y3ubakpralfnwxcvxexdyvy5i
-- valory/decision_maker_abci:0.1.0:bafybeibig2weckhfyo7znmbiblx2qgow2yv5pgrxggktrebv5bbqvsqbya
-- valory/staking_abci:0.1.0:bafybeibj3m3ctd5tmqvedtpfa3glh4i2jacipwlbbsaaxr2ax4me2avsyq
-- valory/mech_interact_abci:0.1.0:bafybeigavh7mbdgnjqyrdcspodyrmcb423el7z2oozslcjzjvzy72nud2y
+- valory/transaction_settlement_abci:0.1.0:bafybeicbiyk5vj7wl636sixgov4d7my7qq7w7wffvoisghvx3xenhdyx7a
 behaviours:
   main:
     args: {}
-    class_name: PostTxSettlementFullBehaviour
+    class_name: TerminationAbciBehaviours
 handlers:
   abci:
     args: {}
-    class_name: TxSettlementMultiplexerHandler
+    class_name: ABCIHandler
   contract_api:
     args: {}
     class_name: ContractApiHandler
@@ -75,6 +82,7 @@ models:
       cleanup_history_depth: 1
       cleanup_history_depth_current: null
       drand_public_key: 868f005eb8e6e4ca0a47c8a77ceaa5309a47978a7c71bc5cce96366b5d7a569937c529eeda66c7293784a9402801af31
+      finalize_timeout: 60.0
       genesis_config:
         genesis_time: '2022-05-20T16:00:21.735122717Z'
         chain_id: chain-c4daS1
@@ -92,43 +100,43 @@ models:
             - ed25519
           version: {}
         voting_power: '10'
+      history_check_timeout: 1205
+      init_fallback_gas: 0
+      ipfs_domain_name: null
+      keeper_allowed_retries: 3
       keeper_timeout: 30.0
+      light_slash_unit_amount: 5000000000000000
       max_attempts: 10
       max_healthcheck: 120
-      multisend_address: '0x0000000000000000000000000000000000000000'
+      multisend_address: '0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761'
       on_chain_service_id: null
       request_retry_delay: 1.0
       request_timeout: 10.0
       reset_pause_duration: 10
       reset_tendermint_after: 2
       retry_attempts: 400
-      use_slashing: false
+      retry_timeout: 3
+      round_timeout_seconds: 30.0
+      serious_slash_unit_amount: 8000000000000000
+      service_id: termination_abci
+      service_registry_address: '0x48b6af7B12C71f09e2fC8aF4855De4Ff54e775cA'
+      setup: {}
+      share_tm_config_on_startup: false
       slash_cooldown_hours: 3
       slash_threshold_amount: 10000000000000000
-      light_slash_unit_amount: 5000000000000000
-      serious_slash_unit_amount: 8000000000000000
-      retry_timeout: 3
-      round_timeout_seconds: 350.0
-      service_id: tx_settlement_multiplexer
-      service_registry_address: null
-      setup:
-        all_participants:
-        - '0x0000000000000000000000000000000000000000'
-        safe_contract_address: '0x0000000000000000000000000000000000000000'
-        consensus_threshold: null
-      share_tm_config_on_startup: false
-      sleep_time: 5
+      sleep_time: 1
       tendermint_check_sleep_delay: 3
       tendermint_com_url: http://localhost:8080
       tendermint_max_retries: 5
       tendermint_p2p_url: localhost:26656
       tendermint_url: http://localhost:26657
+      termination_from_block: 0
       termination_sleep: 900
       tx_timeout: 10.0
+      use_slashing: false
       use_termination: false
-      agent_balance_threshold: 10000000000000000
-      refill_check_interval: 10
-    class_name: TxSettlementMultiplexerParams
+      validate_timeout: 1205
+    class_name: TerminationParams
   requests:
     args: {}
     class_name: Requests
@@ -138,5 +146,10 @@ models:
   state:
     args: {}
     class_name: SharedState
-dependencies: {}
+  tendermint_dialogues:
+    args: {}
+    class_name: TendermintDialogues
+dependencies:
+  hexbytes: {}
 is_abstract: true
+customs: []

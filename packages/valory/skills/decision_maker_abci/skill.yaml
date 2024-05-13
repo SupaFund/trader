@@ -77,8 +77,8 @@ protocols:
 skills:
 - valory/abstract_round_abci:0.1.0:bafybeih3enhagoql7kzpeyzzu2scpkif6y3ubakpralfnwxcvxexdyvy5i
 - valory/market_manager_abci:0.1.0:bafybeidygkw7mwhbk3ry3au5c5265vms5eti375v5jthd4be5dfnnoache
-- valory/transaction_settlement_abci:0.1.0:bafybeigtzlk4uakmd54rxnznorcrstsr52kta474lgrnvx5ovr546vj7sq
-- valory/mech_interact_abci:0.1.0:bafybeigkvcluq2kejpxdcb54iwqtvwhov5elg3cv4v2yomwjxyu5u7g7hi
+- valory/transaction_settlement_abci:0.1.0:bafybeicbiyk5vj7wl636sixgov4d7my7qq7w7wffvoisghvx3xenhdyx7a
+- valory/mech_interact_abci:0.1.0:bafybeigavh7mbdgnjqyrdcspodyrmcb423el7z2oozslcjzjvzy72nud2y
 behaviours:
   main:
     args: {}
