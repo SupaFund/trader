@@ -104,8 +104,7 @@ class SynchronizedData(
     @property
     def tx_hashes_history(self) -> List[str]:
         """Get the current cycle's tx hashes history, which has not yet been verified."""
-        raw = cast(str, self.db.get("tx_hashes_history", ""))
-        return textwrap.wrap(raw, TX_HASH_LENGTH)
+        return cast(List[str], self.db.get("tx_hashes_history", []))
 
     @property
     def keepers(self) -> Deque[str]:
@@ -405,7 +404,7 @@ class SelectKeeperTransactionSubmissionBAfterTimeoutRound(
         return super().end_block()
 
 
-class ValidateTransactionRound(VotingRound):
+class ValidateTransactionRound(CollectSameUntilThresholdRound, VotingRound):
     """A round in which agents validate the transaction"""
 
     payload_class = ValidatePayload
@@ -415,19 +414,18 @@ class ValidateTransactionRound(VotingRound):
     none_event = Event.NONE
     no_majority_event = Event.NO_MAJORITY
     collection_key = get_name(SynchronizedData.participant_to_votes)
+    selection_key = get_name(SynchronizedData.final_tx_hash)
 
     def end_block(self) -> Optional[Tuple[BaseSynchronizedData, Enum]]:
         """Process the end of the block."""
         # if reached participant threshold, set the result
 
-        if self.positive_vote_threshold_reached:
+        if self.positive_vote_threshold_reached and self.threshold_reached:
             # We obtain the latest tx hash from the `tx_hashes_history`.
             # We keep the hashes sorted by their finalization time.
             # If this property is accessed before the finalization succeeds,
             # then it is incorrectly used.
-            final_tx_hash = cast(
-                SynchronizedData, self.synchronized_data
-            ).to_be_validated_tx_hash
+            final_tx_hash = self.most_voted_payload_values[1]
 
             # We only set the final tx hash if we are about to exit from the transaction settlement skill.
             # Then, the skills which use the transaction settlement can check the tx hash

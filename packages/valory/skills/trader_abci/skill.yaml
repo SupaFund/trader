@@ -22,14 +22,14 @@ skills:
 - valory/abstract_round_abci:0.1.0:bafybeih3enhagoql7kzpeyzzu2scpkif6y3ubakpralfnwxcvxexdyvy5i
 - valory/registration_abci:0.1.0:bafybeiek7zcsxbucjwzgqfftafhfrocvc7q4yxllh2q44jeemsjxg3rcfm
 - valory/reset_pause_abci:0.1.0:bafybeidw4mbx3os3hmv7ley7b3g3gja7ydpitr7mxbjpwzxin2mzyt5yam
-- valory/transaction_settlement_abci:0.1.0:bafybeicbiyk5vj7wl636sixgov4d7my7qq7w7wffvoisghvx3xenhdyx7a
-- valory/termination_abci:0.1.0:bafybeig2ec3qokv52xr6dcj7yljwky7uzoy3mzd6bdp2gx4bgc7httejna
+- valory/transaction_settlement_abci:0.1.0:bafybeicdwgl3iw5xsfb2cm7rr4a2gh6zus5gzcriuyggoqcjjzqotz6434
+- valory/termination_abci:0.1.0:bafybeihyhdahyd65kfv3ptnp74ocdtkqwgxuw7w2umgbeywwgcce6vf2k4
 - valory/market_manager_abci:0.1.0:bafybeidygkw7mwhbk3ry3au5c5265vms5eti375v5jthd4be5dfnnoache
-- valory/decision_maker_abci:0.1.0:bafybeibig2weckhfyo7znmbiblx2qgow2yv5pgrxggktrebv5bbqvsqbya
-- valory/tx_settlement_multiplexer_abci:0.1.0:bafybeihh5jtzu6seweqtxx7hwiy5tufknwoq5ica7lfuh6xuouhisnbk6m
-- valory/staking_abci:0.1.0:bafybeibj3m3ctd5tmqvedtpfa3glh4i2jacipwlbbsaaxr2ax4me2avsyq
-- valory/check_stop_trading_abci:0.1.0:bafybeigey2tkgkdd7mibj3udtgkvbc2wgu7h375qylnk7bupl7ei6ah4mi
-- valory/mech_interact_abci:0.1.0:bafybeigavh7mbdgnjqyrdcspodyrmcb423el7z2oozslcjzjvzy72nud2y
+- valory/decision_maker_abci:0.1.0:bafybeidrgwaaplyan33rolvehlap74hrw22u7pre5nadrhgkdr7tzm6t7i
+- valory/tx_settlement_multiplexer_abci:0.1.0:bafybeiavehntqox2al3ea3h6btfcvzvrlxm3az7h4jnhblcntgpuod2w7i
+- valory/staking_abci:0.1.0:bafybeifwpntu4rk6ighhs7gd5zsbrinbe7wxclmfb7xssqsryu3lmqd6su
+- valory/check_stop_trading_abci:0.1.0:bafybeieddyirs565tuymi36gmmi4xmjzxqh7igidmmsv3n7avzirbtxvzi
+- valory/mech_interact_abci:0.1.0:bafybeieflmaduipvrvoo2z5p52d3utumbpudiv4isr3bpmvopvqlxzmyru
 behaviours:
   main:
     args: {}

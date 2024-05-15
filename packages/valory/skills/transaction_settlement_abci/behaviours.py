@@ -185,6 +185,7 @@ class TransactionSettlementBaseBehaviour(BaseBehaviour, ABC):
             method="POST",
             url=submit_endpoint,
             content=body,
+            headers={"Content-Type": "application/json"},
         )
         if response.status_code != 200:
             self.context.logger.error(
@@ -241,7 +242,7 @@ class TransactionSettlementBaseBehaviour(BaseBehaviour, ABC):
             if self.params.use_relayer
             else self.send_raw_transaction
         )
-        tx_digest, rpc_status = send_raw_transaction(
+        tx_digest, rpc_status = yield from send_raw_transaction(
             message.raw_transaction,
             use_flashbots,
             raise_on_failed_simulation=raise_on_failed_simulation,
@@ -321,6 +322,8 @@ class TransactionSettlementBaseBehaviour(BaseBehaviour, ABC):
         tx_params = skill_input_hex_to_payload(
             self.synchronized_data.most_voted_tx_hash
         )
+        safe_tx_hash_bytes = binascii.unhexlify(tx_params["safe_tx_hash"])
+
         chain_id = self.synchronized_data.get_chain_id(self.params.default_chain_id)
         contract_api_msg = yield from self.get_contract_api_response(
             performative=ContractApiMessage.Performative.GET_STATE,  # type: ignore
@@ -339,6 +342,8 @@ class TransactionSettlementBaseBehaviour(BaseBehaviour, ABC):
             },
             operation=tx_params["operation"],
             chain_id=chain_id,
+            safe_tx_hash=safe_tx_hash_bytes,
+            is_via_relayer=self.params.use_relayer,
         )
         return contract_api_msg
 
@@ -494,12 +499,16 @@ class ValidateTransactionBehaviour(TransactionSettlementBaseBehaviour):
         """
 
         with self.context.benchmark_tool.measure(self.behaviour_id).local():
-            is_correct = yield from self.has_transaction_been_sent()
+            is_correct, tx_hash = yield from self.has_transaction_been_sent()
             if is_correct:
                 self.context.logger.info(
                     f"Finalized with transaction hash: {self.synchronized_data.to_be_validated_tx_hash}"
                 )
-            payload = ValidatePayload(self.context.agent_address, is_correct)
+            payload = ValidatePayload(
+                self.context.agent_address,
+                is_correct,
+                tx_hash,
+            )
 
         with self.context.benchmark_tool.measure(self.behaviour_id).consensus():
             yield from self.send_a2a_transaction(payload)
@@ -513,8 +522,7 @@ class ValidateTransactionBehaviour(TransactionSettlementBaseBehaviour):
             return self.synchronized_data.to_be_validated_tx_hash
 
         url = f"{self.params.relayer_endpoint}/api/relay/status/{self.synchronized_data.to_be_validated_tx_hash}"
-        status = RelayedTxStatus.QUEUED.value
-        while status == RelayedTxStatus.QUEUED.value:
+        while True:
             response = yield from self.get_http_response(
                 method="GET",
                 url=url,
@@ -528,16 +536,19 @@ class ValidateTransactionBehaviour(TransactionSettlementBaseBehaviour):
             tx = json.loads(response.body)["tx"]
             status = tx["status"]
             self.context.logger.info(f"Received status: {status} for relayed tx with id {tx['id']}")
-            return tx.get("txHash", None)
+            if status == RelayedTxStatus.QUEUED.value:
+                yield from self.sleep(self.params.retry_timeout)
+                continue
+            return tx.get("tx_hash", None)
 
-    def has_transaction_been_sent(self) -> Generator[None, None, Optional[bool]]:
+    def has_transaction_been_sent(self) -> Generator[None, None, Tuple[Optional[bool], Optional[str]]]:
         """Transaction verification."""
         to_be_validated_tx_hash = yield from self._get_tx_hash_to_validate()
         if to_be_validated_tx_hash is None:
             self.context.logger.error(
                 f"Could not retrieve the transaction hash to validate!"
             )
-            return False
+            return False, None
         response = yield from self.get_transaction_receipt(
             to_be_validated_tx_hash,
             self.params.retry_timeout,
@@ -547,7 +558,7 @@ class ValidateTransactionBehaviour(TransactionSettlementBaseBehaviour):
             self.context.logger.error(
                 f"tx {to_be_validated_tx_hash} receipt check timed out!"
             )
-            return None
+            return None, None
 
         contract_api_msg = yield from self._verify_tx(to_be_validated_tx_hash)
         if (
@@ -565,7 +576,7 @@ class ValidateTransactionBehaviour(TransactionSettlementBaseBehaviour):
             else f"Verified result: {verified}, all: {contract_api_msg.state.body}"
         )
         self.context.logger.info(verified_log)
-        return verified
+        return verified, to_be_validated_tx_hash
 
 
 class CheckTransactionHistoryBehaviour(TransactionSettlementBaseBehaviour):
@@ -932,7 +943,7 @@ class FinalizeBehaviour(TransactionSettlementBaseBehaviour):
                 "blacklisted_keepers": "".join(
                     cast(Set[str], tx_data["blacklisted_keepers"])
                 ),
-                "tx_hashes_history": "".join(tx_hashes_history),
+                "tx_hashes_history": tx_hashes_history,
                 "received_hash": bool(tx_data["tx_digest"]),
             }
 

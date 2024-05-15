@@ -18,7 +18,6 @@ packages/valory/contracts/mech/
 packages/valory/contracts/gnosis_safe_proxy_factory/
 packages/valory/contracts/multisend/
 packages/valory/contracts/service_registry/
-packages/valory/contracts/gnosis_safe/
 
 packages/valory/protocols/abci
 packages/valory/protocols/acn

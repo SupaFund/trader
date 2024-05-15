@@ -45,6 +45,7 @@ class ValidatePayload(BaseTxPayload):
     """Represent a transaction payload of type 'validate'."""
 
     vote: Optional[bool] = None
+    final_tx_hash: Optional[str] = None
 
 
 @dataclass(frozen=True)

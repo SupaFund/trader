@@ -7,7 +7,7 @@ license: Apache-2.0
 fingerprint:
   README.md: bafybeigtuothskwyvrhfosps2bu6suauycolj67dpuxqvnicdrdu7yhtvq
 fingerprint_ignore_patterns: []
-agent: valory/trader:0.1.0:bafybeie4s3ow2bxh4hnmlc44b7mjpkzbvozffxflcjdiny5hx73kghz5jm
+agent: valory/trader:0.1.0:bafybeifpp3bfpusltrpcyxbxx22xy2ibcil3fgqumdqt6sh7o77tzktfcm
 number_of_agents: 4
 deployment: {}
 ---
@@ -58,6 +58,7 @@ type: skill
         round_timeout_seconds: ${ROUND_TIMEOUT:float:350.0}
         service_id: ${SERVICE_ID:str:trader}
         service_registry_address: ${SERVICE_REGISTRY_ADDRESS:str:0x9338b5153AE39BB89f50468E608eD9d764B755fD}
+        relayer_endpoint: ${RELAYER_ENDPOINT:str:null}
         agent_registry_address: ${AGENT_REGISTRY_ADDRESS:str:0xE49CB081e8d96920C38aA7AB90cb0294ab4Bc8EA}
         share_tm_config_on_startup: ${USE_ACN:bool:false}
         sleep_time: ${SLEEP_TIME:int:1}
