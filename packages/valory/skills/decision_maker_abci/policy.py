@@ -143,7 +143,10 @@ class EGreedyPolicy:
             return None
 
         random.seed(randomness)
-        if not self.has_updated or random.random() < self.eps:  # nosec
+        random_value = random.random()
+        self.context.logger(f"random value = {random_value}")
+        self.context.logger(f"epsilon value = {self.eps}")
+        if not self.has_updated or random_value < self.eps:  # nosec
             return self.random_tool
 
         return self.best_tool
