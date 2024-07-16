@@ -142,18 +142,10 @@ class EGreedyPolicy:
         if self.n_tools == 0:
             return None
 
-<<<<<<< HEAD
-        random.seed(randomness)
-        random_value = random.random()
-        print(f"random value = {random_value}")
-        print(f"epsilon value = {self.eps}")
-        if not self.has_updated or random_value < self.eps:  # nosec
-=======
         if randomness is not None:
             random.seed(randomness)
 
         if not self.has_updated or random.random() < self.eps:  # nosec
->>>>>>> main
             return self.random_tool
 
         return self.best_tool
