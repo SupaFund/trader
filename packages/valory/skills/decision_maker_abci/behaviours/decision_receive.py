@@ -389,7 +389,7 @@ class DecisionReceiveBehaviour(DecisionMakerBaseBehaviour):
             bet_threshold = 0
 
         potential_net_profit = num_shares - net_bet_amount - bet_threshold
-        is_profitable = potential_net_profit >= 0
+        is_profitable = True
 
         self.context.logger.info(
             f"The current liquidity of the market is {bet.scaledLiquidityMeasure} xDAI. "
