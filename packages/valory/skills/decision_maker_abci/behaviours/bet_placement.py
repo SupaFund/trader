@@ -18,9 +18,10 @@
 # ------------------------------------------------------------------------------
 
 """This module contains the behaviour for sampling a bet."""
-
+import unittest.mock
 from typing import Any, Generator, Optional, cast
 
+import web3
 from hexbytes import HexBytes
 
 from packages.valory.contracts.erc20.contract import ERC20
@@ -126,13 +127,24 @@ class BetPlacementBehaviour(DecisionMakerBaseBehaviour):
 
     def _calc_buy_amount(self) -> WaitableConditionType:
         """Calculate the buy amount of the conditional token."""
+        web3._utils.error_formatters_utils._raise_contract_error = lambda response_error_data: self.context.logger.error(response_error_data)
         response_msg = yield from self.get_contract_api_response(
             performative=ContractApiMessage.Performative.GET_RAW_TRANSACTION,  # type: ignore
             contract_address=self.market_maker_contract_address,
-            contract_id=str(FixedProductMarketMakerContract.contract_id),
-            contract_callable="calc_buy_amount",
-            investment_amount=self.investment_amount,
-            outcome_index=self.outcome_index,
+                contract_id=str(FixedProductMarketMakerContract.contract_id),
+                contract_callable="calc_buy_amount",
+                investment_amount=self.investment_amount,
+                outcome_index=self.outcome_index,
+        )
+        self.context.logger.info("`calc_buy_amount` params:")
+        self.context.logger.info(
+            "------------------------------------------------------------------"
+        )
+        self.context.logger.info(self.market_maker_contract_address)
+        self.context.logger.info(self.investment_amount)
+        self.context.logger.info(self.outcome_index)
+        self.context.logger.info(
+            "------------------------------------------------------------------"
         )
         if response_msg.performative != ContractApiMessage.Performative.RAW_TRANSACTION:
             self.context.logger.error(
