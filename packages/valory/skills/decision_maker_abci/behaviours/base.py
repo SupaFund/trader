@@ -815,7 +815,7 @@ class DecisionMakerBaseBehaviour(BetsManagerBehaviour, ABC):
 
         batch = MultisendBatch(
             to=self.market_maker_contract_address,
-            data=bytes.fromhex(tx_data[2:]),
+            data=bytes.fromhex(str(tx_data[2:])),
         )
         self.multisend_batches.append(batch)
         return True
