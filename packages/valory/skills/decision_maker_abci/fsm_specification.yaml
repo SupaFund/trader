@@ -7,8 +7,6 @@ alphabet_in:
 - DONE
 - FETCH_ERROR
 - INSUFFICIENT_BALANCE
-- MECH_RESPONSE_ERROR
-- MOCK_MECH_REQUEST
 - MOCK_TX
 - NEW_SIMULATED_RESAMPLE
 - NONE
@@ -18,16 +16,13 @@ alphabet_in:
 - NO_SUBSCRIPTION
 - REDEEM_ROUND_TIMEOUT
 - ROUND_TIMEOUT
-- SLOTS_UNSUPPORTED_ERROR
 - SUBSCRIPTION_ERROR
-- TIE
 - UNPROFITABLE
 default_start_state: CheckBenchmarkingModeRound
 final_states:
 - BenchmarkingDoneRound
 - BenchmarkingModeDisabledRound
 - FinishedDecisionMakerRound
-- FinishedDecisionRequestRound
 - FinishedSubscriptionRound
 - FinishedWithoutDecisionRound
 - FinishedWithoutRedeemingRound
@@ -37,7 +32,6 @@ label: DecisionMakerAbciApp
 start_states:
 - CheckBenchmarkingModeRound
 - ClaimRound
-- DecisionReceiveRound
 - HandleFailedTxRound
 - RandomnessRound
 - RedeemRound
@@ -49,21 +43,18 @@ states:
 - BlacklistingRound
 - CheckBenchmarkingModeRound
 - ClaimRound
-- DecisionReceiveRound
-- DecisionRequestRound
 - FinishedDecisionMakerRound
-- FinishedDecisionRequestRound
 - FinishedSubscriptionRound
 - FinishedWithoutDecisionRound
 - FinishedWithoutRedeemingRound
 - HandleFailedTxRound
 - ImpossibleRound
+- PredictionRound
 - RandomnessRound
 - RedeemRound
 - RefillRequiredRound
 - SamplingRound
 - SubscriptionRound
-- ToolSelectionRound
 transition_func:
     (BenchmarkingRandomnessRound, DONE): SamplingRound
     (BenchmarkingRandomnessRound, NONE): ImpossibleRound
@@ -89,24 +80,17 @@ transition_func:
     (CheckBenchmarkingModeRound, NO_MAJORITY): CheckBenchmarkingModeRound
     (CheckBenchmarkingModeRound, ROUND_TIMEOUT): CheckBenchmarkingModeRound
     (CheckBenchmarkingModeRound, SUBSCRIPTION_ERROR): ImpossibleRound
-    (ClaimRound, DONE): ToolSelectionRound
+    (ClaimRound, DONE): SamplingRound
     (ClaimRound, NO_MAJORITY): ClaimRound
     (ClaimRound, ROUND_TIMEOUT): ClaimRound
     (ClaimRound, SUBSCRIPTION_ERROR): ClaimRound
-    (DecisionReceiveRound, DONE): BetPlacementRound
-    (DecisionReceiveRound, MECH_RESPONSE_ERROR): BlacklistingRound
-    (DecisionReceiveRound, NO_MAJORITY): DecisionReceiveRound
-    (DecisionReceiveRound, ROUND_TIMEOUT): DecisionReceiveRound
-    (DecisionReceiveRound, TIE): BlacklistingRound
-    (DecisionReceiveRound, UNPROFITABLE): BlacklistingRound
-    (DecisionRequestRound, DONE): FinishedDecisionRequestRound
-    (DecisionRequestRound, MOCK_MECH_REQUEST): DecisionReceiveRound
-    (DecisionRequestRound, NO_MAJORITY): DecisionRequestRound
-    (DecisionRequestRound, ROUND_TIMEOUT): DecisionRequestRound
-    (DecisionRequestRound, SLOTS_UNSUPPORTED_ERROR): BlacklistingRound
     (HandleFailedTxRound, BLACKLIST): BlacklistingRound
     (HandleFailedTxRound, NO_MAJORITY): HandleFailedTxRound
     (HandleFailedTxRound, NO_OP): RedeemRound
+    (PredictionRound, DONE): BetPlacementRound
+    (PredictionRound, NO_MAJORITY): PredictionRound
+    (PredictionRound, ROUND_TIMEOUT): PredictionRound
+    (PredictionRound, UNPROFITABLE): BlacklistingRound
     (RandomnessRound, DONE): SamplingRound
     (RandomnessRound, NONE): ImpossibleRound
     (RandomnessRound, NO_MAJORITY): RandomnessRound
@@ -117,7 +101,7 @@ transition_func:
     (RedeemRound, NO_MAJORITY): RedeemRound
     (RedeemRound, NO_REDEEMING): FinishedWithoutRedeemingRound
     (RedeemRound, REDEEM_ROUND_TIMEOUT): FinishedWithoutRedeemingRound
-    (SamplingRound, BENCHMARKING_ENABLED): ToolSelectionRound
+    (SamplingRound, BENCHMARKING_ENABLED): PredictionRound
     (SamplingRound, BENCHMARKING_FINISHED): BenchmarkingDoneRound
     (SamplingRound, DONE): SubscriptionRound
     (SamplingRound, FETCH_ERROR): ImpossibleRound
@@ -126,13 +110,9 @@ transition_func:
     (SamplingRound, NO_MAJORITY): SamplingRound
     (SamplingRound, ROUND_TIMEOUT): SamplingRound
     (SubscriptionRound, DONE): FinishedSubscriptionRound
-    (SubscriptionRound, MOCK_TX): ToolSelectionRound
+    (SubscriptionRound, MOCK_TX): SamplingRound
     (SubscriptionRound, NONE): SubscriptionRound
     (SubscriptionRound, NO_MAJORITY): SubscriptionRound
-    (SubscriptionRound, NO_SUBSCRIPTION): ToolSelectionRound
+    (SubscriptionRound, NO_SUBSCRIPTION): SamplingRound
     (SubscriptionRound, ROUND_TIMEOUT): SubscriptionRound
     (SubscriptionRound, SUBSCRIPTION_ERROR): SubscriptionRound
-    (ToolSelectionRound, DONE): DecisionRequestRound
-    (ToolSelectionRound, NONE): ToolSelectionRound
-    (ToolSelectionRound, NO_MAJORITY): ToolSelectionRound
-    (ToolSelectionRound, ROUND_TIMEOUT): ToolSelectionRound
