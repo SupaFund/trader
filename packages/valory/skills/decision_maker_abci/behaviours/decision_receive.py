@@ -45,15 +45,15 @@ from packages.valory.skills.market_manager_abci.bets import (
     BINARY_N_SLOTS,
     Bet,
     CONFIDENCE_FIELD,
-    INFO_UTILITY_FIELD,
+    # INFO_UTILITY_FIELD, # May not be needed if supafund_trader doesn't provide it
     P_NO_FIELD,
     P_YES_FIELD,
     PredictionResponse,
     QueueStatus,
 )
-from packages.valory.skills.mech_interact_abci.states.base import (
-    MechInteractionResponse,
-)
+# from packages.valory.skills.mech_interact_abci.states.base import (
+#     MechInteractionResponse, # Not needed if we are not interacting with Mech
+# )
 
 
 SLIPPAGE = 1.05
@@ -70,42 +70,47 @@ class DecisionReceiveBehaviour(StorageManagerBehaviour):
     def __init__(self, **kwargs: Any) -> None:
         """Initialize Behaviour."""
         super().__init__(**kwargs, loader_cls=ComponentPackageLoader)
-        self._request_id: int = 0
-        self._mech_response: Optional[MechInteractionResponse] = None
-        self._rows_exceeded: bool = False
+        # self._request_id: int = 0 # Not needed if not interacting with Mech
+        # self._mech_response: Optional[MechInteractionResponse] = None # Not needed
+        self._rows_exceeded: bool = False # Related to benchmarking, might need adjustment or removal if benchmarking changes
 
-    @property
-    def request_id(self) -> int:
-        """Get the request id."""
-        return self._request_id
-
-    @request_id.setter
-    def request_id(self, request_id: Union[str, int]) -> None:
-        """Set the request id."""
-        try:
-            self._request_id = int(request_id)
-        except ValueError:
-            msg = f"Request id {request_id} is not a valid integer!"
-            self.context.logger.error(msg)
-
-    @property
-    def mech_response(self) -> MechInteractionResponse:
-        """Get the mech's response."""
-        if self._mech_response is None:
-            error = "The mech's response has not been set!"
-            return MechInteractionResponse(error=error)
-        return self._mech_response
-
-    @property
-    def is_invalid_response(self) -> bool:
-        """Check if the response is invalid."""
-        if self.mech_response.result is None:
-            self.context.logger.warning(
-                "Trying to check whether the mech's response is invalid but no response has been detected! "
-                "Assuming invalid response."
-            )
-            return True
-        return self.mech_response.result == self.params.mech_invalid_response
+    # Properties related to Mech interaction might not be needed anymore
+    # @property
+    # def request_id(self) -> int:
+    #     """Get the request id."""
+    #     return self._request_id
+    #
+    # @request_id.setter
+    # def request_id(self, request_id: Union[str, int]) -> None:
+    #     """Set the request id."""
+    #     try:
+    #         self._request_id = int(request_id)
+    #     except ValueError:
+    #         msg = f"Request id {request_id} is not a valid integer!"
+    #         self.context.logger.error(msg)
+    #
+    # @property
+    # def mech_response(self) -> MechInteractionResponse:
+    #     """Get the mech's response."""
+    #     if self._mech_response is None:
+    #         error = "The mech's response has not been set!"
+    #         return MechInteractionResponse(error=error) # This needs to be handled if other parts still use it
+    #     return self._mech_response
+    #
+    # @property
+    # def is_invalid_response(self) -> bool:
+    #     """Check if the response is invalid."""
+    #     # This logic needs to be adapted if we are not using Mech.
+    #     # For now, let's assume it's not an invalid response from the component,
+    #     # or handle errors directly from run_component_helper.
+    #     # if self.mech_response.result is None:
+    #     #     self.context.logger.warning(
+    #     #         "Trying to check whether the mech's response is invalid but no response has been detected! "
+    #     #         "Assuming invalid response."
+    #     #     )
+    #     #     return True
+    #     # return self.mech_response.result == self.params.mech_invalid_response
+    #     return False # Placeholder: assume component response is not "invalid" in the Mech sense. Error handling is separate.
 
     def _next_dataset_row(self) -> Optional[Dict[str, str]]:
         """Read the next row from the input dataset which is used during the benchmarking mode.
@@ -197,28 +202,85 @@ class DecisionReceiveBehaviour(StorageManagerBehaviour):
     def _get_decision(
         self,
     ) -> Optional[PredictionResponse]:
-        """Get vote, win probability and confidence."""
-        if self.benchmarking_mode.enabled:
-            self._mock_response()
-        else:
-            self._get_response()
+        """Get vote, win probability and confidence directly from supafund_trader."""
+        self.context.logger.info("Attempting to get decision from supafund_trader script.")
 
-        if self._mech_response is None:
-            self.context.logger.info("The mech response is None")
+        active_sampled_bet = self.get_active_sampled_bet()
+        if active_sampled_bet is None:
+            self.context.logger.error("No active bet sampled, cannot get decision.")
             return None
 
-        self.context.logger.info(f"Decision has been received:\n{self.mech_response}")
-        if self.mech_response.result is None:
+        # Prepare kwargs for the supafund_trader script
+        # This is an example, adjust according to your supafund_trader.py's REQUIRED_FIELDS
+
+        # Determine selected_type_tokens_in_pool and other_tokens_in_pool
+        # This might depend on a preliminary vote or if the script determines this internally.
+        # For now, let's assume we need to get some pool info.
+        # If supafund_trader calculates probabilities without a pre-determined vote, this part might change.
+        # Using a dummy vote (e.g., 0 for YES) to get initial pool state.
+        # The actual vote will be determined by supafund_trader's p_yes and p_no.
+        preliminary_vote_for_pool_info = 0 # Example: 0 for YES
+        selected_tokens, other_tokens = self._get_bet_sample_info(active_sampled_bet, preliminary_vote_for_pool_info)
+
+        script_kwargs = {
+            "bankroll": self.wallet_balance,
+            "selected_type_tokens_in_pool": selected_tokens,
+            "other_tokens_in_pool": other_tokens,
+            "bet_fee": active_sampled_bet.fee,
+            "floor_balance": self.params.floor_balance,
+            "market_title": active_sampled_bet.title,
+            "market_creator": active_sampled_bet.creator,
+            # supafund_trader.py expects "win_probability" and "confidence"
+            # but it calculates them internally. We provide placeholders.
+            "win_probability": 0.5, # Dummy, will be replaced by script's output
+            "confidence": 0.5, # Dummy, will be replaced by script's output
+            # Add any other fields required by supafund_trader.py's REQUIRED_FIELDS
+        }
+
+        self.context.logger.info(f"Calling supafund_trader with kwargs: {script_kwargs}")
+
+        strategy_result = self.run_component_helper(
+            component_id="custom_scripts/supafund_trader",
+            method_name="run",
+            kwargs=script_kwargs,
+        )
+
+        self.context.logger.info(f"supafund_trader script result: {strategy_result}")
+
+        if strategy_result is None or "error" in strategy_result and strategy_result["error"] and any(strategy_result["error"]):
+            error_msg = f"Error running supafund_trader: {strategy_result.get('error', 'Unknown error') if strategy_result else 'None result'}"
+            self.context.logger.error(error_msg)
+            return None
+
+        p_yes = strategy_result.get("p_yes")
+        p_no = strategy_result.get("p_no")
+        confidence = strategy_result.get("confidence")
+
+        if p_yes is None or p_no is None or confidence is None:
             self.context.logger.error(
-                f"There was an error on the mech's response: {self.mech_response.error}"
+                f"Supafund trader did not return p_yes, p_no, or confidence. Result: {strategy_result}"
             )
             return None
 
-        try:
-            return PredictionResponse(**json.loads(self.mech_response.result))
-        except (json.JSONDecodeError, ValueError) as exc:
-            self.context.logger.error(f"Could not parse the mech's response: {exc}")
-            return None
+        vote = 0 if p_yes > p_no else 1 # 0 for YES, 1 for NO
+        # win_probability = p_yes if vote == 0 else p_no # This is already p_yes or p_no
+
+        # The info_utility field can be set to 0 or another default if not applicable
+        # supafund_trader doesn't return info_utility, so we use a default.
+        info_utility = 0.0
+
+        prediction = PredictionResponse(
+            p_yes=p_yes,
+            p_no=p_no,
+            confidence=confidence,
+            info_utility=info_utility,
+            vote=vote,
+        )
+        self.context.logger.info(f"Decision received from supafund_trader: {prediction}")
+
+        # self.policy.tool_responded(self.params.trading_strategy, self.synced_timestamp, False) # Or based on actual error
+
+        return prediction
 
     @staticmethod
     def _get_bet_sample_info(bet: Bet, vote: int) -> Tuple[int, int]:
@@ -578,10 +640,16 @@ class DecisionReceiveBehaviour(StorageManagerBehaviour):
                 self.shared_state.benchmarking_mech_calls += 1
 
             if prediction_response is not None:
+                # Assuming no error if we have a prediction_response.
+                # Error handling for the component call is done in _get_decision.
+                # The concept of "invalid_response" in the Mech sense might not directly apply.
+                # If `is_invalid_response` is still needed, its logic should be updated.
+                # For now, we assume the response is valid if no error was caught.
+                is_component_response_invalid = False # Placeholder
                 self.policy.tool_responded(
-                    self.synchronized_data.mech_tool,
+                    self.params.trading_strategy, # Assuming trading_strategy refers to the component
                     self.synced_timestamp,
-                    self.is_invalid_response,
+                    is_component_response_invalid, # This needs to be determined based on component's output
                 )
                 policy = self.policy.serialize()
 

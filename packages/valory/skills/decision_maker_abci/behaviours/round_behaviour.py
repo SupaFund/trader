@@ -40,9 +40,9 @@ from packages.valory.skills.decision_maker_abci.behaviours.claim_subscription im
 from packages.valory.skills.decision_maker_abci.behaviours.decision_receive import (
     DecisionReceiveBehaviour,
 )
-from packages.valory.skills.decision_maker_abci.behaviours.decision_request import (
-    DecisionRequestBehaviour,
-)
+# from packages.valory.skills.decision_maker_abci.behaviours.decision_request import (
+#     DecisionRequestBehaviour, # Removed
+# )
 from packages.valory.skills.decision_maker_abci.behaviours.handle_failed_tx import (
     HandleFailedTxBehaviour,
 )
@@ -70,7 +70,7 @@ class AgentDecisionMakerRoundBehaviour(AbstractRoundBehaviour):
     abci_app_cls = DecisionMakerAbciApp
     behaviours: Set[Type[BaseBehaviour]] = {
         SamplingBehaviour,  # type: ignore
-        DecisionRequestBehaviour,  # type: ignore
+        # DecisionRequestBehaviour,  # type: ignore # Removed
         DecisionReceiveBehaviour,  # type: ignore
         BlacklistingBehaviour,  # type: ignore
         BetPlacementBehaviour,  # type: ignore

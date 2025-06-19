@@ -27,7 +27,7 @@ final_states:
 - BenchmarkingDoneRound
 - BenchmarkingModeDisabledRound
 - FinishedDecisionMakerRound
-- FinishedDecisionRequestRound
+# - FinishedDecisionRequestRound # Removed
 - FinishedSubscriptionRound
 - FinishedWithoutDecisionRound
 - FinishedWithoutRedeemingRound
@@ -50,9 +50,9 @@ states:
 - CheckBenchmarkingModeRound
 - ClaimRound
 - DecisionReceiveRound
-- DecisionRequestRound
+# - DecisionRequestRound # Removed
 - FinishedDecisionMakerRound
-- FinishedDecisionRequestRound
+# - FinishedDecisionRequestRound # Removed
 - FinishedSubscriptionRound
 - FinishedWithoutDecisionRound
 - FinishedWithoutRedeemingRound
@@ -99,11 +99,11 @@ transition_func:
     (DecisionReceiveRound, ROUND_TIMEOUT): DecisionReceiveRound
     (DecisionReceiveRound, TIE): BlacklistingRound
     (DecisionReceiveRound, UNPROFITABLE): BlacklistingRound
-    (DecisionRequestRound, DONE): FinishedDecisionRequestRound
-    (DecisionRequestRound, MOCK_MECH_REQUEST): DecisionReceiveRound
-    (DecisionRequestRound, NO_MAJORITY): DecisionRequestRound
-    (DecisionRequestRound, ROUND_TIMEOUT): DecisionRequestRound
-    (DecisionRequestRound, SLOTS_UNSUPPORTED_ERROR): BlacklistingRound
+    # (DecisionRequestRound, DONE): FinishedDecisionRequestRound # Removed
+    # (DecisionRequestRound, MOCK_MECH_REQUEST): DecisionReceiveRound # Removed
+    # (DecisionRequestRound, NO_MAJORITY): DecisionRequestRound # Removed
+    # (DecisionRequestRound, ROUND_TIMEOUT): DecisionRequestRound # Removed
+    # (DecisionRequestRound, SLOTS_UNSUPPORTED_ERROR): BlacklistingRound # Removed
     (HandleFailedTxRound, BLACKLIST): BlacklistingRound
     (HandleFailedTxRound, NO_MAJORITY): HandleFailedTxRound
     (HandleFailedTxRound, NO_OP): RedeemRound
@@ -132,7 +132,7 @@ transition_func:
     (SubscriptionRound, NO_SUBSCRIPTION): ToolSelectionRound
     (SubscriptionRound, ROUND_TIMEOUT): SubscriptionRound
     (SubscriptionRound, SUBSCRIPTION_ERROR): SubscriptionRound
-    (ToolSelectionRound, DONE): DecisionRequestRound
+    (ToolSelectionRound, DONE): DecisionReceiveRound # Changed from DecisionRequestRound
     (ToolSelectionRound, NONE): ToolSelectionRound
     (ToolSelectionRound, NO_MAJORITY): ToolSelectionRound
     (ToolSelectionRound, ROUND_TIMEOUT): ToolSelectionRound

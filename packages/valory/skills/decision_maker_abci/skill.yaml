@@ -399,4 +399,6 @@ dependencies:
     version: ==4.0.0
   pyyaml:
     version: <=6.0.1,>=3.10
+customs:
+  - public_id: valory/custom_scripts/supafund_trader:0.1.0
 is_abstract: true

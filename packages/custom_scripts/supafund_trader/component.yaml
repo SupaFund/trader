@@ -1,0 +1,11 @@
+name: supafund_trader
+author: User
+version: 0.1.0
+type: custom
+description: A custom trading strategy that uses the supafund model to predict startup success.
+license: Apache-2.0
+aea_version: '>=1.0.0, <2.0.0'
+fingerprint: {} # Will be auto-populated by 'autonomy add-key' or 'autonomy develop fetch'
+entry_point: supafund_trader.py
+prefix_import_path: packages.custom_scripts
+customs: []
