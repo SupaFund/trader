@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # ------------------------------------------------------------------------------
 #
-#   Copyright 2023-2024 Valory AG
+#   Copyright 2023-2025 Valory AG
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -17,12 +17,20 @@
 #
 # ------------------------------------------------------------------------------
 
-"""This module contains the data classes for the decision maker."""
+"""This module contains the rounds for the decision-making."""
 
-from enum import Enum
-from typing import Dict, Set, Type
+from typing import Dict, Set
 
-from packages.valory.skills.abstract_round_abci.base import AbciApp
+from packages.valory.skills.abstract_round_abci.base import (
+    AbciApp,
+    AbciAppTransitionFunction,
+    AppState,
+    get_name,
+)
+from packages.valory.skills.decision_maker_abci.states.base import (
+    Event,
+    SynchronizedData,
+)
 from packages.valory.skills.decision_maker_abci.states.bet_placement import (
     BetPlacementRound,
 )
@@ -32,11 +40,20 @@ from packages.valory.skills.decision_maker_abci.states.blacklisting import (
 from packages.valory.skills.decision_maker_abci.states.check_benchmarking import (
     CheckBenchmarkingModeRound,
 )
-from packages.valory.skills.decision_maker_abci.states.claim_subscription import ClaimRound
+from packages.valory.skills.decision_maker_abci.states.claim_subscription import (
+    ClaimRound,
+)
+from packages.valory.skills.decision_maker_abci.states.decision_receive import (
+    DecisionReceiveRound,
+)
+from packages.valory.skills.decision_maker_abci.states.decision_request import (
+    DecisionRequestRound,
+)
 from packages.valory.skills.decision_maker_abci.states.final_states import (
     BenchmarkingDoneRound,
     BenchmarkingModeDisabledRound,
     FinishedDecisionMakerRound,
+    FinishedDecisionRequestRound,
     FinishedSubscriptionRound,
     FinishedWithoutDecisionRound,
     FinishedWithoutRedeemingRound,
@@ -49,41 +66,18 @@ from packages.valory.skills.decision_maker_abci.states.handle_failed_tx import (
 from packages.valory.skills.decision_maker_abci.states.order_subscription import (
     SubscriptionRound,
 )
-from packages.valory.skills.decision_maker_abci.states.prediction import PredictionRound
 from packages.valory.skills.decision_maker_abci.states.randomness import (
     BenchmarkingRandomnessRound,
     RandomnessRound,
 )
 from packages.valory.skills.decision_maker_abci.states.redeem import RedeemRound
 from packages.valory.skills.decision_maker_abci.states.sampling import SamplingRound
-
-
-class Event(Enum):
-    """Event enumeration for the decision maker."""
-
-    DONE = "done"
-    NONE = "none"
-    NO_MAJORITY = "no_majority"
-    ROUND_TIMEOUT = "round_timeout"
-    UNPROFITABLE = "unprofitable"
-    FETCH_ERROR = "fetch_error"
-    TIE = "tie"
-    MECH_RESPONSE_ERROR = "mech_response_error"
-    INSUFFICIENT_BALANCE = "insufficient_balance"
-    SLOTS_UNSUPPORTED_ERROR = "slots_unsupported_error"
-    NO_REDEEMING = "no_redeeming"
-    REDEEM_ROUND_TIMEOUT = "redeem_round_timeout"
-    MOCK_TX = "mock_tx"
-    MOCK_MECH_REQUEST = "mock_mech_request"
-    BLACKLIST = "blacklist"
-    NO_OP = "no_op"
-    CALC_BUY_AMOUNT_FAILED = "calc_buy_amount_failed"
-    BENCHMARKING_ENABLED = "benchmarking_enabled"
-    BENCHMARKING_DISABLED = "benchmarking_disabled"
-    BENCHMARKING_FINISHED = "benchmarking_finished"
-    NEW_SIMULATED_RESAMPLE = "new_simulated_resample"
-    NO_SUBSCRIPTION = "no_subscription"
-    SUBSCRIPTION_ERROR = "subscription_error"
+from packages.valory.skills.decision_maker_abci.states.tool_selection import (
+    ToolSelectionRound,
+)
+from packages.valory.skills.market_manager_abci.rounds import (
+    Event as MarketManagerEvent,
+)
 
 
 class DecisionMakerAbciApp(AbciApp[Event]):
@@ -91,167 +85,309 @@ class DecisionMakerAbciApp(AbciApp[Event]):
 
     Initial round: CheckBenchmarkingModeRound
 
-    Initial states: {CheckBenchmarkingModeRound, ClaimRound, HandleFailedTxRound, RandomnessRound, RedeemRound}
+    Initial states: {CheckBenchmarkingModeRound, ClaimRound, DecisionReceiveRound, HandleFailedTxRound, RandomnessRound, RedeemRound}
 
     Transition states:
-        ClaimRound
-        HandleFailedTxRound
-        RandomnessRound
-        BenchmarkingRandomnessRound
-        SubscriptionRound
-        SamplingRound
-        PredictionRound
-        BetPlacementRound
-        RedeemRound
-        BlacklistingRound
-        CheckBenchmarkingModeRound
+        0. CheckBenchmarkingModeRound
+            - benchmarking enabled: 1.
+            - benchmarking disabled: 14.
+            - no majority: 0.
+            - round timeout: 0.
+            - none: 20.
+            - done: 20.
+            - subscription error: 20.
+        1. BenchmarkingRandomnessRound
+            - done: 3.
+            - round timeout: 1.
+            - no majority: 1.
+            - none: 20.
+        2. RandomnessRound
+            - done: 3.
+            - round timeout: 2.
+            - no majority: 2.
+            - none: 20.
+        3. SamplingRound
+            - done: 4.
+            - none: 16.
+            - no majority: 3.
+            - round timeout: 3.
+            - new simulated resample: 3.
+            - benchmarking enabled: 6.
+            - benchmarking finished: 21.
+            - fetch error: 20.
+        4. SubscriptionRound
+            - done: 18.
+            - mock tx: 6.
+            - no subscription: 6.
+            - none: 4.
+            - subscription error: 4.
+            - no majority: 4.
+            - round timeout: 4.
+        5. ClaimRound
+            - done: 6.
+            - subscription error: 5.
+            - no majority: 5.
+            - round timeout: 5.
+        6. ToolSelectionRound
+            - done: 7.
+            - none: 6.
+            - no majority: 6.
+            - round timeout: 6.
+        7. DecisionRequestRound
+            - done: 15.
+            - mock mech request: 8.
+            - slots unsupported error: 9.
+            - no majority: 7.
+            - round timeout: 7.
+        8. DecisionReceiveRound
+            - done: 10.
+            - mech response error: 9.
+            - no majority: 8.
+            - tie: 9.
+            - unprofitable: 9.
+            - round timeout: 8.
+        9. BlacklistingRound
+            - done: 16.
+            - mock tx: 16.
+            - none: 20.
+            - no majority: 9.
+            - round timeout: 9.
+            - fetch error: 20.
+        10. BetPlacementRound
+            - done: 13.
+            - mock tx: 11.
+            - insufficient balance: 19.
+            - calc buy amount failed: 12.
+            - no majority: 10.
+            - round timeout: 10.
+            - none: 20.
+        11. RedeemRound
+            - done: 13.
+            - mock tx: 3.
+            - no redeeming: 17.
+            - no majority: 11.
+            - redeem round timeout: 17.
+            - none: 20.
+        12. HandleFailedTxRound
+            - blacklist: 9.
+            - no op: 11.
+            - no majority: 12.
+        13. FinishedDecisionMakerRound
+        14. BenchmarkingModeDisabledRound
+        15. FinishedDecisionRequestRound
+        16. FinishedWithoutDecisionRound
+        17. FinishedWithoutRedeemingRound
+        18. FinishedSubscriptionRound
+        19. RefillRequiredRound
+        20. ImpossibleRound
+        21. BenchmarkingDoneRound
 
-    Final states: {BenchmarkingDoneRound, BenchmarkingModeDisabledRound, FinishedDecisionMakerRound, FinishedSubscriptionRound, FinishedWithoutDecisionRound, FinishedWithoutRedeemingRound, ImpossibleRound, RefillRequiredRound}
+    Final states: {BenchmarkingDoneRound, BenchmarkingModeDisabledRound, FinishedDecisionMakerRound, FinishedDecisionRequestRound, FinishedSubscriptionRound, FinishedWithoutDecisionRound, FinishedWithoutRedeemingRound, ImpossibleRound, RefillRequiredRound}
 
     Timeouts:
         round timeout: 30.0
-        redeem round timeout: 60.0
+        redeem round timeout: 3600.0
     """
 
-    initial_round_cls: Type = CheckBenchmarkingModeRound
-    transition_function: Dict = {
-        ClaimRound: {
-            Event.DONE: SamplingRound,
-            Event.NO_MAJORITY: ClaimRound,
-            Event.ROUND_TIMEOUT: ClaimRound,
-            Event.SUBSCRIPTION_ERROR: ClaimRound,
-        },
-        HandleFailedTxRound: {
-            Event.NO_OP: RedeemRound,
-            Event.BLACKLIST: BlacklistingRound,
-            Event.NO_MAJORITY: HandleFailedTxRound,
-        },
-        RandomnessRound: {
-            Event.DONE: SamplingRound,
-            Event.ROUND_TIMEOUT: RandomnessRound,
-            Event.NO_MAJORITY: RandomnessRound,
+    initial_round_cls: AppState = CheckBenchmarkingModeRound
+    initial_states: Set[AppState] = {
+        CheckBenchmarkingModeRound,
+        RandomnessRound,
+        HandleFailedTxRound,
+        DecisionReceiveRound,
+        RedeemRound,
+        ClaimRound,
+    }
+    transition_function: AbciAppTransitionFunction = {
+        CheckBenchmarkingModeRound: {
+            Event.BENCHMARKING_ENABLED: BenchmarkingRandomnessRound,
+            Event.BENCHMARKING_DISABLED: BenchmarkingModeDisabledRound,
+            Event.NO_MAJORITY: CheckBenchmarkingModeRound,
+            Event.ROUND_TIMEOUT: CheckBenchmarkingModeRound,
+            # added because of `autonomy analyse fsm-specs`
+            # falsely reporting them as missing from the transition
             Event.NONE: ImpossibleRound,
+            Event.DONE: ImpossibleRound,
+            Event.SUBSCRIPTION_ERROR: ImpossibleRound,
         },
         BenchmarkingRandomnessRound: {
             Event.DONE: SamplingRound,
             Event.ROUND_TIMEOUT: BenchmarkingRandomnessRound,
             Event.NO_MAJORITY: BenchmarkingRandomnessRound,
+            # added because of `autonomy analyse fsm-specs`
+            # falsely reporting this as missing from the transition
             Event.NONE: ImpossibleRound,
         },
-        SubscriptionRound: {
-            Event.DONE: FinishedSubscriptionRound,
-            Event.NO_SUBSCRIPTION: SamplingRound,
-            Event.SUBSCRIPTION_ERROR: SubscriptionRound,
-            Event.NO_MAJORITY: SubscriptionRound,
-            Event.ROUND_TIMEOUT: SubscriptionRound,
-            Event.NONE: SubscriptionRound,
-            Event.MOCK_TX: SamplingRound,
+        RandomnessRound: {
+            Event.DONE: SamplingRound,
+            Event.ROUND_TIMEOUT: RandomnessRound,
+            Event.NO_MAJORITY: RandomnessRound,
+            # added because of `autonomy analyse fsm-specs`
+            # falsely reporting this as missing from the transition
+            Event.NONE: ImpossibleRound,
         },
         SamplingRound: {
             Event.DONE: SubscriptionRound,
-            Event.BENCHMARKING_ENABLED: PredictionRound,
             Event.NONE: FinishedWithoutDecisionRound,
-            Event.FETCH_ERROR: ImpossibleRound,
             Event.NO_MAJORITY: SamplingRound,
             Event.ROUND_TIMEOUT: SamplingRound,
-            Event.BENCHMARKING_FINISHED: BenchmarkingDoneRound,
             Event.NEW_SIMULATED_RESAMPLE: SamplingRound,
+            Event.BENCHMARKING_ENABLED: ToolSelectionRound,
+            Event.BENCHMARKING_FINISHED: BenchmarkingDoneRound,
+            # this is here because of `autonomy analyse fsm-specs`
+            # falsely reporting it as missing from the transition
+            MarketManagerEvent.FETCH_ERROR: ImpossibleRound,
         },
-        PredictionRound: {
+        SubscriptionRound: {
+            Event.DONE: FinishedSubscriptionRound,
+            # skip placing the subscription tx and the claiming round
+            Event.MOCK_TX: ToolSelectionRound,
+            Event.NO_SUBSCRIPTION: ToolSelectionRound,
+            Event.NONE: SubscriptionRound,
+            Event.SUBSCRIPTION_ERROR: SubscriptionRound,
+            Event.NO_MAJORITY: SubscriptionRound,
+            Event.ROUND_TIMEOUT: SubscriptionRound,
+        },
+        ClaimRound: {
+            Event.DONE: ToolSelectionRound,
+            Event.SUBSCRIPTION_ERROR: ClaimRound,
+            Event.NO_MAJORITY: ClaimRound,
+            Event.ROUND_TIMEOUT: ClaimRound,
+        },
+        ToolSelectionRound: {
+            Event.DONE: DecisionRequestRound,
+            Event.NONE: ToolSelectionRound,
+            Event.NO_MAJORITY: ToolSelectionRound,
+            Event.ROUND_TIMEOUT: ToolSelectionRound,
+        },
+        DecisionRequestRound: {
+            Event.DONE: FinishedDecisionRequestRound,
+            # skip the request to the mech
+            Event.MOCK_MECH_REQUEST: DecisionReceiveRound,
+            Event.SLOTS_UNSUPPORTED_ERROR: BlacklistingRound,
+            Event.NO_MAJORITY: DecisionRequestRound,
+            Event.ROUND_TIMEOUT: DecisionRequestRound,
+        },
+        DecisionReceiveRound: {
             Event.DONE: BetPlacementRound,
+            Event.MECH_RESPONSE_ERROR: BlacklistingRound,
+            Event.NO_MAJORITY: DecisionReceiveRound,
+            Event.TIE: BlacklistingRound,
             Event.UNPROFITABLE: BlacklistingRound,
-            Event.ROUND_TIMEOUT: PredictionRound,
-            Event.NO_MAJORITY: PredictionRound,
-        },
-        BetPlacementRound: {
-            Event.DONE: FinishedDecisionMakerRound,
-            Event.INSUFFICIENT_BALANCE: RefillRequiredRound,
-            Event.NO_MAJORITY: BetPlacementRound,
-            Event.ROUND_TIMEOUT: BetPlacementRound,
-            Event.NONE: ImpossibleRound,
-            Event.MOCK_TX: RedeemRound,
-            Event.CALC_BUY_AMOUNT_FAILED: HandleFailedTxRound,
-        },
-        RedeemRound: {
-            Event.DONE: FinishedDecisionMakerRound,
-            Event.NO_REDEEMING: FinishedWithoutRedeemingRound,
-            Event.REDEEM_ROUND_TIMEOUT: FinishedWithoutRedeemingRound,
-            Event.NO_MAJORITY: RedeemRound,
-            Event.NONE: ImpossibleRound,
-            Event.MOCK_TX: SamplingRound,
+            # loop on the same state until Mech deliver is received
+            Event.ROUND_TIMEOUT: DecisionReceiveRound,
         },
         BlacklistingRound: {
             Event.DONE: FinishedWithoutDecisionRound,
+            Event.MOCK_TX: FinishedWithoutDecisionRound,
+            # degenerate round on purpose, should never have reached here
+            Event.NONE: ImpossibleRound,
             Event.NO_MAJORITY: BlacklistingRound,
             Event.ROUND_TIMEOUT: BlacklistingRound,
-            Event.NONE: ImpossibleRound,
-            Event.FETCH_ERROR: ImpossibleRound,
-            Event.MOCK_TX: FinishedWithoutDecisionRound,
+            # this is here because of `autonomy analyse fsm-specs`
+            # falsely reporting it as missing from the transition
+            MarketManagerEvent.FETCH_ERROR: ImpossibleRound,
         },
-        CheckBenchmarkingModeRound: {
-            Event.BENCHMARKING_ENABLED: BenchmarkingRandomnessRound,
-            Event.BENCHMARKING_DISABLED: BenchmarkingModeDisabledRound,
-            Event.SUBSCRIPTION_ERROR: ImpossibleRound,
-            Event.NO_MAJORITY: CheckBenchmarkingModeRound,
-            Event.ROUND_TIMEOUT: CheckBenchmarkingModeRound,
+        BetPlacementRound: {
+            Event.DONE: FinishedDecisionMakerRound,
+            # skip the bet placement tx
+            Event.MOCK_TX: RedeemRound,
+            # degenerate round on purpose, owner must refill the safe
+            Event.INSUFFICIENT_BALANCE: RefillRequiredRound,
+            Event.CALC_BUY_AMOUNT_FAILED: HandleFailedTxRound,
+            Event.NO_MAJORITY: BetPlacementRound,
+            Event.ROUND_TIMEOUT: BetPlacementRound,
+            # this is here because of `autonomy analyse fsm-specs`
+            # falsely reporting it as missing from the transition
             Event.NONE: ImpossibleRound,
-            Event.DONE: ImpossibleRound,
         },
+        RedeemRound: {
+            Event.DONE: FinishedDecisionMakerRound,
+            Event.MOCK_TX: SamplingRound,
+            Event.NO_REDEEMING: FinishedWithoutRedeemingRound,
+            Event.NO_MAJORITY: RedeemRound,
+            # in case of a round timeout, there likely is something wrong with redeeming
+            # it could be the RPC, or some other issue.
+            # We don't want to be stuck trying to redeem.
+            Event.REDEEM_ROUND_TIMEOUT: FinishedWithoutRedeemingRound,
+            # this is here because of `autonomy analyse fsm-specs` falsely
+            # reporting it as missing from the transition
+            Event.NONE: ImpossibleRound,
+        },
+        HandleFailedTxRound: {
+            Event.BLACKLIST: BlacklistingRound,
+            Event.NO_OP: RedeemRound,
+            Event.NO_MAJORITY: HandleFailedTxRound,
+        },
+        FinishedDecisionMakerRound: {},
+        BenchmarkingModeDisabledRound: {},
+        FinishedDecisionRequestRound: {},
+        FinishedWithoutDecisionRound: {},
+        FinishedWithoutRedeemingRound: {},
+        FinishedSubscriptionRound: {},
+        RefillRequiredRound: {},
+        ImpossibleRound: {},
+        BenchmarkingDoneRound: {},
     }
-    final_states: Set[Type] = {
+    cross_period_persisted_keys = frozenset(
+        {
+            get_name(SynchronizedData.available_mech_tools),
+            get_name(SynchronizedData.policy),
+            get_name(SynchronizedData.utilized_tools),
+            get_name(SynchronizedData.redeemed_condition_ids),
+            get_name(SynchronizedData.payout_so_far),
+            get_name(SynchronizedData.mech_price),
+            get_name(SynchronizedData.mocking_mode),
+            get_name(SynchronizedData.next_mock_data_row),
+            get_name(SynchronizedData.agreement_id),
+        }
+    )
+    final_states: Set[AppState] = {
         FinishedDecisionMakerRound,
-        FinishedWithoutDecisionRound,
-        ImpossibleRound,
-        BenchmarkingDoneRound,
         BenchmarkingModeDisabledRound,
+        FinishedDecisionRequestRound,
+        FinishedSubscriptionRound,
+        FinishedWithoutDecisionRound,
         FinishedWithoutRedeemingRound,
         RefillRequiredRound,
-        FinishedSubscriptionRound,
+        ImpossibleRound,
+        BenchmarkingDoneRound,
     }
-    db_pre_conditions: Dict[Type, Set[str]] = {
-        BenchmarkingRandomnessRound: set(),
-        BetPlacementRound: {
-            "most_voted_randomness",
-            "participant_to_sampling",
-        },
-        BlacklistingRound: {
-            "most_voted_randomness",
-            "participant_to_sampling",
-        },
-        CheckBenchmarkingModeRound: set(),
-        ClaimRound: {"most_voted_randomness", "participant_to_sampling"},
-        HandleFailedTxRound: set(),
-        RandomnessRound: set(),
-        RedeemRound: {"most_voted_randomness", "participant_to_sampling"},
-        SamplingRound: {"most_voted_randomness"},
-        SubscriptionRound: set(),
-    }
-    db_post_conditions: Dict[Type, Set[str]] = {
-        BenchmarkingDoneRound: set(),
-        BenchmarkingModeDisabledRound: set(),
-        BenchmarkingRandomnessRound: {"most_voted_randomness"},
-        BetPlacementRound: {"tx_hashes_history"},
-        BlacklistingRound: {"participant_to_blacklist"},
-        CheckBenchmarkingModeRound: set(),
-        ClaimRound: {"participant_to_subscription"},
-        FinishedDecisionMakerRound: set(),
-        FinishedSubscriptionRound: set(),
-        FinishedWithoutDecisionRound: set(),
-        FinishedWithoutRedeemingRound: set(),
-        HandleFailedTxRound: set(),
-        ImpossibleRound: set(),
-        RandomnessRound: {"most_voted_randomness"},
-        RedeemRound: {"participant_to_redeem"},
-        RefillRequiredRound: set(),
-        SamplingRound: {"participant_to_sampling"},
-        SubscriptionRound: {"participant_to_subscription"},
-    }
-
-    event_to_timeout: Dict = {
+    event_to_timeout: Dict[Event, float] = {
         Event.ROUND_TIMEOUT: 30.0,
-        Event.REDEEM_ROUND_TIMEOUT: 60.0,
+        Event.REDEEM_ROUND_TIMEOUT: 3600.0,
     }
-    cross_period_persisted_keys: Set[str] = {
-        "tx_hashes_history",
-        "participant_to_blacklist",
+    db_pre_conditions: Dict[AppState, Set[str]] = {
+        RedeemRound: set(),
+        ClaimRound: set(),
+        DecisionReceiveRound: {
+            get_name(SynchronizedData.final_tx_hash),
+        },
+        HandleFailedTxRound: {
+            get_name(SynchronizedData.bets_hash),
+        },
+        RandomnessRound: set(),
+        CheckBenchmarkingModeRound: set(),
+    }
+    db_post_conditions: Dict[AppState, Set[str]] = {
+        FinishedDecisionMakerRound: {
+            get_name(SynchronizedData.sampled_bet_index),
+            get_name(SynchronizedData.tx_submitter),
+            get_name(SynchronizedData.most_voted_tx_hash),
+        },
+        BenchmarkingModeDisabledRound: set(),
+        FinishedDecisionRequestRound: set(),
+        FinishedSubscriptionRound: {
+            get_name(SynchronizedData.tx_submitter),
+            get_name(SynchronizedData.most_voted_tx_hash),
+            get_name(SynchronizedData.agreement_id),
+        },
+        FinishedWithoutDecisionRound: {get_name(SynchronizedData.sampled_bet_index)},
+        FinishedWithoutRedeemingRound: set(),
+        RefillRequiredRound: set(),
+        ImpossibleRound: set(),
+        BenchmarkingDoneRound: {
+            get_name(SynchronizedData.mocking_mode),
+            get_name(SynchronizedData.next_mock_data_row),
+        },
     }
