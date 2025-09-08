@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # ------------------------------------------------------------------------------
 #
-#   Copyright 2023-2024 Valory AG
+#   Copyright 2023-2025 Valory AG
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -56,6 +56,9 @@ from packages.valory.skills.decision_maker_abci.states.bet_placement import (
     BetPlacementRound,
 )
 from packages.valory.skills.decision_maker_abci.states.redeem import RedeemRound
+from packages.valory.skills.decision_maker_abci.states.sell_outcome_tokens import (
+    SellOutcomeTokensRound,
+)
 from packages.valory.skills.market_manager_abci.graph_tooling.requests import (
     FetchStatus,
     MAX_LOG_SIZE,
@@ -968,7 +971,7 @@ class RedeemBehaviour(RedeemInfoBehaviour):
         with self.context.benchmark_tool.measure(self.behaviour_id).local():
             success = yield from self._setup_policy_and_tools()
             if not success:
-                return None
+                return
 
             payload: Optional[RedeemPayload]
             if self.benchmarking_mode.enabled:
@@ -981,7 +984,10 @@ class RedeemBehaviour(RedeemInfoBehaviour):
                 if (
                     self.synchronized_data.did_transact
                     and self.synchronized_data.tx_submitter
-                    == BetPlacementRound.auto_round_id()
+                    in (
+                        BetPlacementRound.auto_round_id(),
+                        SellOutcomeTokensRound.auto_round_id(),
+                    )
                 ):
                     self.update_bet_transaction_information()
 
