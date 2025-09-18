@@ -69,3 +69,5 @@ benchmarks/
 /data
 /data2
 /tendermint
+coverage.xml
+.hypothesis/
