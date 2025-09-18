@@ -64,3 +64,8 @@ logs/
 data/
 benchmarks/
 .vscode/
+/benchmarks
+/benchmarks2
+/data
+/data2
+/tendermint

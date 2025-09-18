@@ -1,6 +1,6 @@
 name: trader_pearl
-author: valory
-version: 0.1.0
+author: supafund
+version: 0.1.1
 description: A single-agent service (sovereign agent) placing bets on Omen, used by
   Pearl.
 aea_version: '>=1.0.0, <2.0.0'
